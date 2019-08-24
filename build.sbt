@@ -3,7 +3,7 @@ import IntegrationTest._
 import UnitTest._
 import RegressionTest._
 
-name := "spark-streaming"
+name := "dataframe-equality"
 organization := "com.gilcu2"
 
 UnitTestSettings ++ IntegrationTestSettings ++ AcceptanceTestSettings ++ RegressionTestSettings

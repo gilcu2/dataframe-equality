@@ -3,12 +3,12 @@ package com.gilcu2.dataframeequality
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 trait DataFrameSameSchemeEquality {
-  def areEqual(df1: DataFrame, df2: DataFrame, keyFields: Array[String])(implicit spark: SparkSession): Boolean
+  def areEqual(df1: DataFrame, df2: DataFrame, primaryKeys: Array[String])(implicit spark: SparkSession): Boolean
 }
 
 object EqualityByExcept extends DataFrameSameSchemeEquality {
 
-  def areEqual(df1: DataFrame, df2: DataFrame, keyFields: Array[String])(implicit spark: SparkSession): Boolean = {
+  def areEqual(df1: DataFrame, df2: DataFrame, primaryKeys: Array[String])(implicit spark: SparkSession): Boolean = {
     df1.cache()
     df2.cache()
 
@@ -24,7 +24,7 @@ object EqualityByExcept extends DataFrameSameSchemeEquality {
 
 object EqualityByHashcode extends DataFrameSameSchemeEquality {
 
-  def areEqual(df1: DataFrame, df2: DataFrame, keyFields: Array[String])(implicit spark: SparkSession): Boolean = {
+  def areEqual(df1: DataFrame, df2: DataFrame, primaryKeys: Array[String])(implicit spark: SparkSession): Boolean = {
 
     df1.cache()
     df2.cache()
@@ -43,4 +43,29 @@ object EqualityByHashcode extends DataFrameSameSchemeEquality {
     df.map(_.hashCode().toLong).reduce(_ + _)
   }
 
+}
+
+object EqualityByDirectComparison extends DataFrameSameSchemeEquality {
+
+  val suffix = "_2"
+
+  def areEqual(df1: DataFrame, df2: DataFrame, primaryKeys: Array[String])(implicit spark: SparkSession): Boolean = {
+
+    df1.cache()
+    df2.cache()
+
+    val count1 = df1.count()
+    val count2 = df2.count()
+
+    val columnsSize = df1.columns.size
+    val primaryKeySize = primaryKeys.length
+    val noPrimaryColumnsSize = columnsSize - primaryKeySize
+    val join = df1.join(df2, primaryKeys)
+    val differentRows = join.filter(joinRow => !(0 to noPrimaryColumnsSize - 1).forall(index => {
+      val r = joinRow(primaryKeySize + index) == joinRow(primaryKeySize + noPrimaryColumnsSize + index)
+      r
+    }))
+
+    count1 == count2 && join.count == count1 && differentRows.count == 0
+  }
 }
