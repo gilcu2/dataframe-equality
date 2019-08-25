@@ -10,7 +10,7 @@ trait ConfigValuesTrait
 
 trait LineArgumentValuesTrait
 
-trait MainTrait extends LazyLogging {
+trait SparkMainTrait extends LazyLogging {
 
   def getConfigValues(conf: Config): ConfigValuesTrait
 
