@@ -23,6 +23,8 @@ object RandomDataFrame {
       finalRandomValuesOtherColumnsDf = finalRandomValuesOtherColumnsDf.withColumn(columnNames(i), randomUdf($"field1"))
     })
 
+    finalRandomValuesOtherColumnsDf.cache()
+
     val firstColumnName = columnNames(0)
     val lastColumnName = columnNames(totalColumns - 1)
     val differentDf = finalRandomValuesOtherColumnsDf.withColumn(lastColumnName,

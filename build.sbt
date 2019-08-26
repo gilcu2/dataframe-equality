@@ -32,11 +32,11 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.8" % "test"
 )
 
-mainClass in(Compile, run) := Some("com.gilcu2.TCPStreamingMain")
+mainClass in(Compile, run) := Some("com.gilcu2.DataFrameEqualityMain")
 
 test in assembly := {}
 
-assemblyJarName in assembly := "SparkStreaming.jar"
+assemblyJarName in assembly := "DataFrameEquality.jar"
 
 assemblyMergeStrategy in assembly := {
   //  case PathList("org", "apache", "spark", "unused", "UnusedStubClass.class") => MergeStrategy.first

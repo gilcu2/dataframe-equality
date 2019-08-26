@@ -13,16 +13,19 @@ object DataFrameEqualityMain extends SparkMainTrait {
 
     val lineParameter = lineArguments.asInstanceOf[CommandParameterValues]
 
-    val results = Performance.measureTimes(lineParameter.sizes,
-      lineParameter.nKeys, lineParameter.nOtherFields)
+    val sizes = lineParameter.sizes
+    val nKeys = lineParameter.nKeys
+    val nOtherFields = lineParameter.nOtherFields
 
+    println(s"Computing times for nKeys:$nKeys nOtherFields:$nOtherFields sizes:$sizes")
+
+    val results = Performance.measureTimesPerAlgorithm(sizes, nKeys, nOtherFields)
+
+    println(s"Results (ms):\n$results")
   }
 
   def getConfigValues(conf: Config): ConfigValues = {
-    val firstPath = conf.getString("FirstDataFramePath")
-    val secondPath = conf.getString("SecondDataFramePath")
-    val keyFields = conf.getString("KeyFields").split(",")
-    ConfigValues(firstPath, secondPath, keyFields)
+    ConfigValues("")
   }
 
   def getLineArgumentsValues(args: Array[String], configValues: ConfigValuesTrait): CommandParameterValues = {
@@ -42,7 +45,7 @@ object DataFrameEqualityMain extends SparkMainTrait {
     val logCountsAndTimes = opt[Boolean]()
     val nKeys = opt[Int](default = Some(2))
     val nOtherFields = opt[Int](default = Some(2))
-    val sizes = trailArg[List[Int]](default = Some(List(1000)))
+    val sizes = trailArg[List[Int]](default = Some(List(1000, 2000, 3000)))
   }
 
   case class CommandParameterValues(logCountsAndTimes: Boolean,
@@ -51,7 +54,7 @@ object DataFrameEqualityMain extends SparkMainTrait {
                                     nOtherFields: Int
                                    ) extends LineArgumentValuesTrait
 
-  case class ConfigValues(firstPath: String, secondPath: String, keyFields: Array[String]) extends ConfigValuesTrait
+  case class ConfigValues(noConfig: String) extends ConfigValuesTrait
 
 
 }

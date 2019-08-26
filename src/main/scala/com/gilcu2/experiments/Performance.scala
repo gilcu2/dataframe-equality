@@ -6,34 +6,71 @@ import com.gilcu2.interfaces.Time._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.joda.time.Duration
 
-case class PerformanceResult(nRows: Seq[Int], nKeys: Int, nOtherFields: Int,
-                             byExceptEqual: Seq[Duration], byExcexptDifferent: Seq[Duration],
+case class PerformanceResult(sizes: Seq[Int], nKeys: Int, nOtherFields: Int,
+                             byExceptEqual: Seq[Duration], byExceptDifferent: Seq[Duration],
                              byHashcodeEqual: Seq[Duration], byHashcodeDifferent: Seq[Duration],
-                             byDirectComparizonEqual: Seq[Duration], DirectComparizon: Seq[Duration]
-                            )
+                             byDirectComparisonEqual: Seq[Duration], byDirectComparisonDifferent: Seq[Duration]
+                            ) {
+  override def toString: String = {
+
+    def makeString[T](label: String, values: Seq[T]): String = s"$label\t\t\t${values.mkString("\t")}\n"
+
+    def makeStringDuration(label: String, values: Seq[Duration]): String =
+      makeString(label, values.map(_.getMillis))
+
+    makeString("Size", sizes) + "\n" +
+      makeStringDuration("ExceptEqual", byExceptEqual) +
+      makeStringDuration("HashcodeEqual", byHashcodeEqual) +
+      makeStringDuration("ComparisonEqual", byDirectComparisonEqual) + "\n" +
+      makeStringDuration("ExceptDifferent", byExceptDifferent) +
+      makeStringDuration("HashcodeDifferent", byHashcodeDifferent) +
+      makeStringDuration("ComparisonDifferent", byDirectComparisonDifferent)
+
+  }
+}
 
 object Performance {
 
 
-  def measureTimes(sizes: Seq[Int], nKeys: Int, nOtherFields: Int)(implicit spark: SparkSession): PerformanceResult = {
+  def measureTimesPerAlgorithm(sizes: Seq[Int], nKeys: Int, nOtherFields: Int)(implicit spark: SparkSession): PerformanceResult = {
 
-    val times = sizes.map(size => {
+    val sizes1 = Seq(sizes.head) ++ sizes
+
+    val times = sizes1.map(size => {
       val (df1, df2) = RandomDataFrame.generate(size, nKeys, nOtherFields)
+      df1.cache()
+      df2.cache()
+      df1.count()
+      df2.count()
+
       val keyFieldNames = df1.columns.slice(0, nKeys - 1)
 
-      measureTimesEqualAndDifferent(df1, df2, keyFieldNames)
+      measureTimesPerData(df1, df2, keyFieldNames)
 
     })
 
-    val timesByExceptEqual
-
-    PerformanceResult(Seq(1), 1, 1,
-      Seq.empty[Duration], Seq.empty[Duration], Seq.empty[Duration],
-      Seq.empty[Duration], Seq.empty[Duration], Seq.empty[Duration])
+    getResults(sizes, nKeys, nOtherFields, times)
   }
 
-  private def measureTimesEqualAndDifferent(df1: DataFrame, df2: DataFrame, keyFieldNames: Array[String])(
-    implicit spark: SparkSession): Array[Duration] = {
+  private def getResults(sizes: Seq[Int], nKeys: Int, nOtherFields: Int, times: Seq[TimeResultsPerData]) = {
+
+    val timesByExceptEqual = times.map(_.timeByExceptEqual)
+    val timesByExceptDifferent = times.map(_.timeByExceptDifferent)
+
+    val timesByHashcodeEqual = times.map(_.timeByHashCodeEqual)
+    val timesByHashcodeDifferent = times.map(_.timeByHashcodeDifferent)
+
+    val timesDirectComparisonEqual = times.map(_.timeByDirectComparisonEqual)
+    val timesByDirectComparisonDifferent = times.map(_.timeByDirectComparisonDifferent)
+
+    PerformanceResult(sizes, nKeys, nOtherFields,
+      timesByExceptEqual, timesByExceptDifferent,
+      timesByHashcodeEqual, timesByHashcodeDifferent,
+      timesDirectComparisonEqual, timesByDirectComparisonDifferent)
+  }
+
+  private def measureTimesPerData(df1: DataFrame, df2: DataFrame, keyFieldNames: Array[String])(
+    implicit spark: SparkSession): TimeResultsPerData = {
 
     val timeByExceptEqual = measureTimeAndValidate(EqualityByExcept.areEqual,
       df1, df1, keyFieldNames, expected = true)
@@ -50,18 +87,23 @@ object Performance {
     val timeByDirectComparisonDifferent = measureTimeAndValidate(EqualityByHashcode.areEqual,
       df1, df2, keyFieldNames, expected = false)
 
-    Array(timeByExceptEqual, timeByExceptDifferent, timeByHashCodeEqual, timeByHashcodeDifferent, timeByDirectComparisonEqual, timeByDirectComparisonDifferent)
+    TimeResultsPerData(timeByExceptEqual, timeByExceptDifferent, timeByHashCodeEqual, timeByHashcodeDifferent, timeByDirectComparisonEqual, timeByDirectComparisonDifferent)
   }
 
   private def measureTimeAndValidate(f: (DataFrame, DataFrame, Array[String]) => Boolean,
                                      df1: DataFrame, df2: DataFrame, keyFieldNames: Array[String],
                                      expected: Boolean)(implicit spark: SparkSession): Duration = {
     val beginTime = getCurrentTime
-    val result = f(df1, df1, keyFieldNames)
+    val result = f(df1, df2, keyFieldNames)
     val endTime = getCurrentTime
 
     assert(result == expected)
 
     getDuration(beginTime, endTime)
   }
+
+  private case class TimeResultsPerData(timeByExceptEqual: Duration, timeByExceptDifferent: Duration,
+                                        timeByHashCodeEqual: Duration, timeByHashcodeDifferent: Duration,
+                                        timeByDirectComparisonEqual: Duration, timeByDirectComparisonDifferent: Duration)
+
 }

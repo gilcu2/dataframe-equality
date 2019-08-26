@@ -26,7 +26,7 @@ class RandomDataFrameTest extends FlatSpec with Matchers with GivenWhenThen with
     And("The second dataframe must have the last field of the last column incremented")
     val lastRow = df.filter(_.getInt(0) == nRows).head
     val lastRowDifferent = dfDifferent.filter(_.getInt(0) == nRows).head
-    lastRowDifferent.getInt(nKeys + nOtherFields) shouldBe lastRow.getInt(nKeys + nOtherFields) + 1
+    lastRowDifferent.getInt(nKeys + nOtherFields - 1) shouldBe lastRow.getInt(nKeys + nOtherFields - 1) + 1
   }
 
   private def checkDataFrame(nRows: Int, nKeys: Int, nOtherFields: Int, df: DataFrame) = {
