@@ -5,11 +5,12 @@ import com.gilcu2.interfaces.{ConfigValuesTrait, LineArgumentValuesTrait, SparkM
 import com.typesafe.config.Config
 import org.apache.spark.sql.SparkSession
 import org.rogach.scallop.ScallopConf
+import com.typesafe.scalalogging.Logger
 
 object DataFrameEqualityMain extends SparkMainTrait {
 
   def process(configValues: ConfigValuesTrait, lineArguments: LineArgumentValuesTrait)(
-    implicit spark: SparkSession): Unit = {
+    implicit spark: SparkSession, logger: Logger): Unit = {
 
     val lineParameter = lineArguments.asInstanceOf[CommandParameterValues]
 
@@ -23,6 +24,8 @@ object DataFrameEqualityMain extends SparkMainTrait {
 
     println(s"Results (ms):\n$results")
   }
+
+  override val appName = "DataFrameEquality"
 
   def getConfigValues(conf: Config): ConfigValues = {
     ConfigValues("")
@@ -43,9 +46,9 @@ object DataFrameEqualityMain extends SparkMainTrait {
 
   class CommandLineParameterConf(arguments: Seq[String]) extends ScallopConf(arguments) {
     val logCountsAndTimes = opt[Boolean]()
-    val nKeys = opt[Int](default = Some(2))
-    val nOtherFields = opt[Int](default = Some(2))
-    val sizes = trailArg[List[Int]](default = Some(List(1000, 2000, 3000)))
+    val nKeys = opt[Int](default = Some(2), short = 'k')
+    val nOtherFields = opt[Int](default = Some(2), short = 'o')
+    val sizes = trailArg[List[Int]](default = Some(List(100000, 200000, 300000)))
   }
 
   case class CommandParameterValues(logCountsAndTimes: Boolean,

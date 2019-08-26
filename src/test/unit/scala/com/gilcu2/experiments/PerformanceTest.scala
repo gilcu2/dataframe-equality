@@ -1,11 +1,15 @@
 package com.gilcu2.experiments
 
 import com.gilcu2.testUtil.SparkSessionTestWrapper
+import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{FlatSpec, GivenWhenThen, Matchers}
 
-class PerformanceTest extends FlatSpec with Matchers with GivenWhenThen with SparkSessionTestWrapper {
+class PerformanceTest extends FlatSpec with Matchers with GivenWhenThen
+  with SparkSessionTestWrapper with LazyLogging {
 
   behavior of "Performance"
+
+  implicit val logger1 = logger
 
   it should "measure the time of the 6 algorithms" in {
 

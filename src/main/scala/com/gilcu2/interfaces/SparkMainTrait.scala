@@ -1,8 +1,9 @@
 package com.gilcu2.interfaces
 
+
 import com.gilcu2.interfaces.Time.{getCurrentTime, getHumanDuration}
 import com.typesafe.config.{Config, ConfigFactory}
-import com.typesafe.scalalogging.LazyLogging
+import com.typesafe.scalalogging.{LazyLogging, Logger}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 
@@ -12,12 +13,14 @@ trait LineArgumentValuesTrait
 
 trait SparkMainTrait extends LazyLogging {
 
+  val appName: String = "SparkMain"
+
   def getConfigValues(conf: Config): ConfigValuesTrait
 
   def getLineArgumentsValues(args: Array[String], configValues: ConfigValuesTrait): LineArgumentValuesTrait
 
   def process(configValues: ConfigValuesTrait, lineArguments: LineArgumentValuesTrait)(
-    implicit spark: SparkSession
+    implicit spark: SparkSession, logger: Logger
   ): Unit
 
   def main(implicit args: Array[String]): Unit = {
@@ -27,8 +30,9 @@ trait SparkMainTrait extends LazyLogging {
     logger.info(s"Arguments: $args")
 
     implicit val conf = ConfigFactory.load
-    val sparkConf = new SparkConf().setAppName("Exploration")
+    val sparkConf = new SparkConf().setAppName(appName)
     implicit val spark = Spark.sparkSession(sparkConf)
+    implicit val logger1 = logger
 
     println(s"Begin: $beginTime Machine: ${OS.getHostname} Cores: ${Spark.getTotalCores}")
 
